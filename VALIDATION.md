@@ -1,6 +1,30 @@
-# Verifiche del port Android
+# Verifiche di Prezzi per Android
 
 Esecuzioni locali del 23 ottobre 2026, Windows, JBR 21.0.4, Gradle 8.13, Android Gradle Plugin 8.13.2, Kotlin 2.1.20. Emulatore di riferimento: Android 15, API 35, x86_64.
+
+## Push su main, aggiornamento con gesto e nome Prezzi
+
+Il push del commit `e833177` ha avviato e concluso senza tag manuali il [workflow di release](https://github.com/GoryNickel9/personal-inflation-android/actions/runs/39957811254), pubblicando [v1.2.0](https://github.com/GoryNickel9/personal-inflation-android/releases/tag/v1.2.0), codice 3. Il tag è stato creato sul commit del push. Anche la [CI dello stesso commit](https://github.com/GoryNickel9/personal-inflation-android/actions/runs/39957811239) è passata.
+
+| Controllo | Risultato |
+| --- | --- |
+| Test JVM | 33 superati |
+| Test Python | 9 superati, inclusi 4 sulla generazione delle versioni |
+| Test strumentali Android 15 | 9 superati nell’ultima esecuzione completa |
+| Lint debug locale e lint release in CI | Superati |
+| APK pubblicato v1.2.0 | 1.634.599 byte, firma e checksum verificati dopo il download da GitHub |
+
+I nuovi test UI eseguono il gesto su Riepilogo, Paniere e Acquisto, verificando una lettura aggiuntiva anche entro la finestra di 60 secondi, la conservazione della bozza e l’assenza di scritture. Verificano anche il gesto con paniere vuoto, errore di rete e successivo recupero. L’intestazione mostra «Prezzi» e il pulsante «Aggiorna dati» è assente. I test Python coprono push consecutivi senza modifica della versione base, confronto numerico delle versioni, salti di versione, input non valido e limite Android del codice versione.
+
+La prima esecuzione strumentale non ha installato la build debug perché nell’emulatore era presente una release con firma diversa. Le esecuzioni successive hanno incontrato una finestra ANR di System UI e un timeout di Espresso nella chiusura della tastiera. Dopo aver chiuso la finestra di sistema e stabilizzato l’emulatore, l’intera suite è stata rieseguita con successo, senza modifiche al codice o ai test per ignorare gli errori.
+
+`actionlint` 1.7.12 controlla entrambi i workflow escludendo solo il suo errore sul nuovo campo `concurrency.queue`, che questa versione non riconosce ancora. GitHub ha accettato ed eseguito il workflow con `queue: max`. Non sono stati misurati tempi o consumi su telefoni fisici.
+
+SHA-256 dell’APK v1.2.0: `9e94877bfa71c533a041812b8eeaba26e9317fdcf156a24305df5bb3610fc27a`. Il certificato release è lo stesso della 1.1.0, riportato sotto.
+
+La 1.1.0 pubblica è stata installata sull’emulatore e ha rilevato e scaricato la 1.2.0 dalla nuova release automatica. Dopo verifica, permesso Android, conferma dell’aggiornamento e scansione Play Protect, l’installer ha concluso con successo mostrando il nome «Prezzi». Il pacchetto aggiornato riporta codice 3 e nome 1.2.0; `appId=10230` e `firstInstallTime=2026-10-23 13:03:21` sono rimasti identici. Non c’è stata disinstallazione tra le due release.
+
+La release scaricata è stata riaperta e ispezionata in verticale, a 360 dp con testo al 200% e in orizzontale a 800 × 360 dp. Il nome e il controllo informazioni restano visibili; il vecchio pulsante di aggiornamento è assente. Le immagini sono in `artifacts/prezzi-v120-*.png`. Densità, dimensioni e scala del testo dell’emulatore sono state ripristinate dopo la prova. Non sono stati eseguiti test con un lettore di schermo reale.
 
 ## Release e autoupdater
 

@@ -17,7 +17,7 @@ class ReleaseArtifactsTest(unittest.TestCase):
         self.apk = self.root / "app-release.apk"
         self.apk.write_bytes(b"test artifact, APK signature verified separately by apksigner")
         self.metadata = self.root / "output-metadata.json"
-        self.metadata.write_text(json.dumps({"applicationId": "cc.baldeddu.prezzi", "elements": [
+        self.metadata.write_text(json.dumps({"applicationId": "cc.baldeddu.prezzi", "minSdkVersionForDexing": 26, "elements": [
             {"versionCode": 2, "versionName": "1.1.0", "outputFile": self.apk.name}]}), encoding="utf-8")
 
     def run_prepare(self, tag="v1.1.0", previous=None):
@@ -48,6 +48,12 @@ class ReleaseArtifactsTest(unittest.TestCase):
         self.version.write_text("versionCode=0\nversionName=../../other\n", encoding="utf-8")
         with self.assertRaises(ValueError):
             read_version(self.version)
+
+    def test_uses_minimum_sdk_from_built_metadata(self):
+        data = json.loads(self.metadata.read_text())
+        data["minSdkVersionForDexing"] = 29
+        self.metadata.write_text(json.dumps(data), encoding="utf-8")
+        self.assertEqual(self.run_prepare()["minSdk"], 29)
 
 
 if __name__ == "__main__":

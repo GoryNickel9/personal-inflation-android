@@ -29,6 +29,9 @@ def prepare(version_file: Path, tag: str, apk: Path, metadata: Path, output: Pat
             or elements[0]["versionCode"] != code or elements[0]["versionName"] != name
             or elements[0]["outputFile"] != apk.name):
         raise ValueError("Built APK metadata does not match the release version")
+    min_sdk = int(info["minSdkVersionForDexing"])
+    if min_sdk < 26:
+        raise ValueError("APK minimum SDK is not supported by this updater")
     size = apk.stat().st_size
     if not 0 < size <= 100 * 1024 * 1024:
         raise ValueError("APK exceeds the updater download limit")
@@ -37,7 +40,7 @@ def prepare(version_file: Path, tag: str, apk: Path, metadata: Path, output: Pat
     asset = f"PrezziNelTempo-{name}.apk"
     shutil.copy2(apk, output / asset)
     manifest = {"schemaVersion": 1, "applicationId": "cc.baldeddu.prezzi", "versionCode": code,
-                "versionName": name, "minSdk": 26, "apkAsset": asset, "size": size, "sha256": digest}
+                "versionName": name, "minSdk": min_sdk, "apkAsset": asset, "size": size, "sha256": digest}
     manifest_file = output / "update.json"
     manifest_file.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     manifest_hash = hashlib.sha256(manifest_file.read_bytes()).hexdigest()

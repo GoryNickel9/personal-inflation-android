@@ -1,0 +1,10 @@
+<resources>
+    <style name="Theme.Prezzi.Base" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#142019</item>
+        <item name="android:colorAccent">#D9F28D</item>
+    </style>
+    <style name="Theme.Prezzi" parent="Theme.Prezzi.Base" />
+</resources>

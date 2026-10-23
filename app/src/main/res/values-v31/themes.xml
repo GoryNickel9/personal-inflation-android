@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.Prezzi" parent="Theme.Prezzi.Base">
+        <item name="android:windowSplashScreenBackground">#142019</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher</item>
+    </style>
+</resources>

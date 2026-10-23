@@ -7,14 +7,18 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -24,6 +28,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cc.baldeddu.prezzi.TrackerState
+import cc.baldeddu.prezzi.R
 import cc.baldeddu.prezzi.TrackerViewModel
 import cc.baldeddu.prezzi.domain.*
 import cc.baldeddu.prezzi.update.UpdateViewModel
@@ -36,6 +41,7 @@ fun PrezziApp(model: TrackerViewModel, updates: UpdateViewModel? = null) = Prezz
     val state by model.state.collectAsStateWithLifecycle()
     var screen by rememberSaveable { mutableStateOf(Screen.Overview) }
     val stateHolder = rememberSaveableStateHolder()
+    val refresh = { if (!state.loading && !state.busy) model.refresh(force = true) }
     val lifecycle = LocalLifecycleOwner.current
     DisposableEffect(lifecycle, model, updates) {
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) { model.refresh(); updates?.check() } }
@@ -56,12 +62,9 @@ fun PrezziApp(model: TrackerViewModel, updates: UpdateViewModel? = null) = Prezz
                         Icon(Icons.Default.ShoppingCart, null, Modifier.padding(10.dp), tint = MaterialTheme.colorScheme.primary)
                     }
                     Column(Modifier.weight(1f)) {
-                        Text("Prezzi nel tempo", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                         Text("IL TUO PANIERE PERSONALE", style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    IconButton(onClick = { model.refresh(force = true) }, enabled = !state.loading && !state.busy) {
-                        Icon(Icons.Default.Refresh, "Aggiorna dati")
                     }
                     if (updates != null) UpdateControls(updates)
                 }
@@ -80,7 +83,11 @@ fun PrezziApp(model: TrackerViewModel, updates: UpdateViewModel? = null) = Prezz
             }
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).imePadding(), contentAlignment = Alignment.TopCenter) {
+        PullToRefreshBox(isRefreshing = state.loading, onRefresh = refresh,
+            modifier = Modifier.fillMaxSize().padding(padding).imePadding().testTag("pull-refresh").semantics {
+                customActions = if (state.loading || state.busy) emptyList()
+                else listOf(CustomAccessibilityAction("Aggiorna pagina") { refresh(); true })
+            }, contentAlignment = Alignment.TopCenter) {
             stateHolder.SaveableStateProvider(screen.name) {
                 when (screen) {
                     Screen.Overview -> Overview(state, { model.refresh(true) }, { screen = Screen.Purchase })

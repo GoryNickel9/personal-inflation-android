@@ -20,25 +20,28 @@ Dalla prima installazione release in poi, gli aggiornamenti usano sempre la stes
 
 ## Pubblicare una nuova versione
 
-1. Aumenta `versionCode` e aggiorna `versionName` in `version.properties`. Il nome deve avere forma `1.2.0`; il codice deve essere maggiore di quello dell’ultima release.
-2. Esegui i test, committa e porta il cambiamento su `main`.
-3. Crea e invia il tag corrispondente:
+1. Esegui i test e committa il cambiamento.
+2. Invia il commit su `main`:
 
 ```powershell
-git tag v1.2.0
 git push origin main
-git push origin v1.2.0
 ```
 
-Il workflow `Signed Android release` verifica che il commit appartenga a `main`, esegue i test Python e JVM, controlla il lint release, compila e firma l’APK, verifica la firma con `apksigner` e controlla tag, metadati e incremento del codice. Crea una release draft con tutti gli asset e la pubblica solo dopo il caricamento completo. Le richieste di pull eseguono il workflow CI senza accesso alla chiave.
+Ogni push attiva `Signed Android release`, anche quando cambia solo la documentazione. Il workflow verifica che il commit appartenga a `main`, esegue i test Python e JVM, controlla il lint release, compila e firma l’APK e ne verifica la firma con `apksigner`. Genera il tag `v<versione>` sul commit del push, carica tutti gli asset in una release draft e poi la pubblica. Non servono tag manuali. Le richieste di pull eseguono la CI senza accesso alla chiave.
+
+`scripts/next_release.py` confronta `version.properties` con il manifest dell’ultima release stabile pubblicata. Sceglie un codice maggiore del precedente e incrementa la patch del nome, salvo che il file dichiari già una versione superiore. Per esempio, dopo `1.2.0`/codice 3, i push successivi producono `1.2.1`/4 e `1.2.2`/5. `version.properties` è la base minima per le build locali e per un eventuale salto di versione; non va modificato a ogni push. La versione effettiva viene passata a Gradle e al generatore del manifest nel runner, senza commit automatici.
+
+Le pubblicazioni condividono una coda con `queue: max`: fino a 100 esecuzioni possono attendere, senza sostituire il push precedente in attesa. Oltre quel limite GitHub annulla le nuove esecuzioni. Il meccanismo è documentato nelle [regole di concorrenza di GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
 Gli asset pubblicati sono:
 
 | Asset | Contenuto |
 | --- | --- |
-| `PrezziNelTempo-<versione>.apk` | APK release firmato e ottimizzato |
+| `PrezziNelTempo-<versione>.apk` | APK release firmato e ottimizzato di Prezzi |
 | `update.json` | Schema 1, package, codice/nome versione, API minima, nome APK, dimensione e SHA-256 |
 | `SHA256SUMS.txt` | Checksum dell’APK e del manifest |
+
+Il nome tecnico dell’asset resta `PrezziNelTempo-<versione>.apk` per permettere anche alla versione 1.1.0 di riconoscerlo. Il nome mostrato nel launcher, nell’intestazione e nell’installer è **Prezzi**. Package e chiave restano gli stessi: il cambio di nome non richiede una reinstallazione.
 
 Le action sono fissate a commit SHA. Le release non vengono sovrascritte: se una pubblicazione fallisce dopo aver creato la draft, controlla ed elimina solo quella draft incompleta prima di ripetere il workflow. Non spostare un tag di una release già pubblicata.
 

@@ -1,4 +1,4 @@
-# Prezzi nel tempo · Android
+# Prezzi · Android
 
 App Android nativa in Kotlin e Jetpack Compose, portata da `personal-inflation`. Usa lo stesso backend del sito e conserva formule, centesimi, quantità di riferimento e identità dei prodotti per nome e marca.
 
@@ -10,6 +10,7 @@ App Android nativa in Kotlin e Jetpack Compose, portata da `personal-inflation`.
 - Tema scuro, navigazione inferiore, conferma delle rimozioni e conservazione dei campi durante la navigazione e la ricreazione della schermata.
 - Cache privata atomica degli ultimi dati caricati. Senza rete si possono consultare i dati già salvati; gli acquisti richiedono una risposta dal server. Le scritture non vengono ritentate automaticamente.
 - Controllo automatico delle nuove release GitHub e download verificato degli aggiornamenti. Il pulsante informazioni apre il controllo manuale e l’installazione Android.
+- Aggiornamento dei dati trascinando verso il basso dall’inizio di Riepilogo, Paniere e Acquisto, con indicatore di caricamento e senza cancellare la bozza. Disponibile anche come azione accessibile «Aggiorna pagina».
 
 ## Build
 
@@ -25,7 +26,7 @@ Richiede JDK 17 o 21, Android SDK 36 e accesso ai repository Maven per il primo 
 
 Sul computer usato per il port, il JDK segnala `Unable to establish loopback connection` aprendo socket UNIX locali. `scripts/build.ps1` sceglie il JDK di Android Studio, applica un fallback TCP limitato al processo e lancia gli stessi controlli. Non modifica impostazioni globali. Usa `-DeviceTests` per includere i test sull’emulatore o sul telefono collegato.
 
-L’APK di sviluppo si trova in `app/build/outputs/apk/debug/app-debug.apk`. La distribuzione usa gli [APK firmati nelle GitHub Releases](https://github.com/GoryNickel9/personal-inflation-android/releases/latest). La build release richiede la chiave configurata nelle variabili d’ambiente; la pipeline la riceve da GitHub Secrets. Versioni, prima installazione e procedura per nuove release sono in [RELEASES.md](RELEASES.md).
+L’APK di sviluppo si trova in `app/build/outputs/apk/debug/app-debug.apk`. Ogni push su `main` pubblica automaticamente un [APK firmato nelle GitHub Releases](https://github.com/GoryNickel9/personal-inflation-android/releases/latest), con versione e tag generati dalla pipeline. La build release richiede la chiave configurata nelle variabili d’ambiente; la pipeline la riceve da GitHub Secrets. Versioni e prima installazione sono descritte in [RELEASES.md](RELEASES.md).
 
 Per installare su un dispositivo collegato o un emulatore:
 
@@ -46,7 +47,7 @@ L’endpoint è `https://inflation.baldeddu.cc`, definito in `app/build.gradle.k
 | Nuovo prodotto o nuovo prezzo | `POST /api/products` |
 | Rimozione prodotto e relativo storico | `DELETE /api/products/{id}` |
 
-Il database resta sul server. Non servono credenziali Neon nel telefono e non sono state copiate variabili d’ambiente dal progetto web. La cache è nei file privati dell’app e il backup Android è disabilitato. Gli aggiornamenti automatici al ritorno nell’app o al cambio di schermata rispettano una finestra di 60 secondi; il pulsante di aggiornamento la supera.
+Il database resta sul server. Non servono credenziali Neon nel telefono e non sono state copiate variabili d’ambiente dal progetto web. La cache è nei file privati dell’app e il backup Android è disabilitato. Gli aggiornamenti automatici al ritorno nell’app o al cambio di schermata rispettano una finestra di 60 secondi; il trascinamento verso il basso forza una nuova lettura. Durante il caricamento o il salvataggio non parte una seconda lettura dal gesto.
 
 Il backend originale non richiede autenticazione: chi raggiunge le API può leggere e modificare il paniere. Questa app conserva quel contratto. Per rendere privato il servizio bisogna aggiungere l’autenticazione al backend e poi al client.
 

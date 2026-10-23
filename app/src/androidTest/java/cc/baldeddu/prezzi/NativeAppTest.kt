@@ -24,11 +24,13 @@ class NativeAppTest {
         Observation(2, 1, 120, LocalDate.parse("2025-01-01"))))
 
     private class FakeGateway(var data: TrackerData) : TrackerGateway {
+        var reads = 0
         var writes = 0
         var deletes = 0
         var fail = false
         override suspend fun cached() = Snapshot(data, 1)
         override suspend fun refresh(): Snapshot {
+            reads++
             if (fail) throw java.io.IOException("Offline: ultimi dati salvati")
             return Snapshot(data, System.currentTimeMillis())
         }
@@ -54,6 +56,49 @@ class NativeAppTest {
     private fun reveal(matcher: SemanticsMatcher): SemanticsNodeInteraction {
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(matcher)
         return compose.onNode(matcher)
+    }
+
+    private fun pullRefresh() {
+        compose.onNode(hasScrollToIndexAction()).performScrollToIndex(0)
+        compose.onNodeWithTag("pull-refresh").performTouchInput {
+            swipeDown(startY = height * 0.1f, endY = height * 0.85f, durationMillis = 500)
+        }
+        compose.waitForIdle()
+    }
+
+    @Test fun pullRefreshForcesReloadOnAllPagesAndPreservesPurchaseDraft() {
+        val gateway = FakeGateway(data)
+        launch(gateway)
+        compose.onNodeWithText("Prezzi").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Aggiorna dati").assertDoesNotExist()
+        for (page in listOf("Riepilogo", "Paniere", "Acquisto")) {
+            compose.onNodeWithText(page, useUnmergedTree = true).performClick()
+            compose.waitForIdle()
+            if (page == "Acquisto") {
+                reveal(hasText("Prodotto")).performTextInput("Bozza da conservare")
+                androidx.test.espresso.Espresso.closeSoftKeyboard()
+            }
+            val reads = gateway.reads
+            pullRefresh()
+            compose.waitUntil(10_000) { gateway.reads == reads + 1 }
+            assertEquals(0, gateway.writes)
+        }
+        reveal(hasText("Bozza da conservare")).assertExists()
+    }
+
+    @Test fun pullRefreshWorksWithEmptyDataAndRecoversAfterNetworkFailure() {
+        val gateway = FakeGateway(TrackerData())
+        launch(gateway)
+        gateway.fail = true
+        val reads = gateway.reads
+        pullRefresh()
+        compose.waitUntil(10_000) { gateway.reads == reads + 1 }
+        compose.onNodeWithText("Offline: ultimi dati salvati").assertExists()
+        gateway.fail = false
+        pullRefresh()
+        compose.waitUntil(10_000) { gateway.reads == reads + 2 }
+        compose.onNodeWithText("Offline: ultimi dati salvati").assertDoesNotExist()
+        compose.onNodeWithText("Il paniere è ancora vuoto").assertExists()
     }
 
     @Test fun nativeNavigationChartAndDeleteConfirmation() {

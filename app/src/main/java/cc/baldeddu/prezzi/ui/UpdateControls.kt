@@ -29,7 +29,7 @@ internal fun UpdateControls(model: UpdateViewModel) {
     var open by rememberSaveable { mutableStateOf(false) }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (context.packageManager.canRequestPackageInstalls()) model.install()
-        else model.reportError("Per installare la release, consenti a Prezzi nel tempo di installare app nelle impostazioni Android.")
+        else model.reportError("Per installare la release, consenti a Prezzi di installare app nelle impostazioni Android.")
     }
     LaunchedEffect(model, context) {
         model.installEvents.collect { file ->
